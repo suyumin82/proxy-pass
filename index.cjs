@@ -55,7 +55,9 @@ const API_ENDPOINTS = [
     '/api/bd/v2_1/provider/getVendors',
     '/api/bd/v2_1/user/getBalance',
     '/api/bd/v2_1/report/generateSettledBetsDetail',
-    '/api/bd/v2_1/report/generateUnsettledBetsDetail'
+    '/api/bd/v2_1/report/generateUnsettledBetsDetail',
+    '/api/bd/v2_1/message/getMessageByTypes',
+    '/api/bd/v2_1/provider/getCategoriesByGroup'
 ];
 
 // Function to log request details
@@ -196,6 +198,10 @@ const server = http.createServer((req, res) => {
       return forceUpdate(req, res);
     }
 
+    if (parsedUrl.pathname.startsWith(`${MCW_API_PATH}maintenance`)) {
+        return getMaintenance(req, res);
+    }
+
     if (API_ENDPOINTS.includes(parsedUrl.pathname)) {
         let body = '';
         
@@ -242,6 +248,28 @@ const forceUpdate = (req, res) => {
             console.error("Error parsing update.json:", parseError);
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: "Invalid JSON format in update.json" }));
+        }
+    });
+};
+
+const getMaintenance = (req, res) => {
+    const filePath = path.join(__dirname, 'json', 'maintenance.json');
+
+    fs.readFile(filePath, 'utf8', (err, data) => {
+        if (err) {
+            console.error("Error reading maintenance.json:", err);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ error: "Failed to load maintenance data" }));
+        }
+
+        try {
+            const maintenanceInfo = JSON.parse(data);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(maintenanceInfo));
+        } catch (parseError) {
+            console.error("Error parsing maintenance.json:", parseError);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: "Invalid JSON format in maintenance.json" }));
         }
     });
 };
