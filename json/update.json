@@ -1,0 +1,13 @@
+{
+    "update_required": true,
+    "latest_version": "2.0.0",
+    "minimum_version": "1.5.0",
+    "update_type": "force",
+    "update_message": "A new version of the app is available. Please update to continue using the app.",
+    "update_url": "https://play.google.com/store/apps/details?id=com.mcwplay4fun.newcity",
+    "changelog": [
+        "Improved performance and stability",
+        "Bug fixes and optimizations",
+        "New UI enhancements"
+    ]
+}
