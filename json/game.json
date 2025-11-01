@@ -1,0 +1,16 @@
+{
+    "games": [
+      {
+        "categoryId": 8280,
+        "displayOrder": 0,
+        "name": "New Game_02",
+        "displayName": "New Game"
+      },
+      {
+        "categoryId": 8651,
+        "displayOrder": 0,
+        "name": "Feature Game_01",
+        "displayName": "Feature Game"
+      }
+    ]
+  }

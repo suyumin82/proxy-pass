@@ -1,15 +1,15 @@
 {
-    "maintenance_mode": true,
-    "title": "MAINTENANCE",
-    "subtitle": "Scheduled Maintenance",
-    "message": "We're currently undergoing scheduled maintenance from 03/05 08:00 (GMT+8) to 03/05 10:00 (GMT+8)",
-    "start_time": "2025-03-05T08:00:00+08:00",
-    "end_time": "2025-03-05T10:00:00+08:00",
-    "timezone": "GMT+8",
-    "icon": "maintenance", 
-    "display": {
-      "text_align": "center",
-      "theme_color": "#ff9900",
-      "background_color": "#231f3e"
-    }
+  "maintenance_mode": true,
+  "title": "MAINTENANCE",
+  "subtitle": "Scheduled Maintenance",
+  "message": "We're currently undergoing scheduled maintenance from 04/06 08:00 (GMT+8) to 04/06 11:00 (GMT+8)",
+  "start_time": "2025-06-04T08:00:00+08:00",
+  "end_time": "2025-06-04T11:00:00+08:00",
+  "timezone": "GMT+8",
+  "icon": "maintenance",
+  "display": {
+    "text_align": "center",
+    "theme_color": "#ff9900",
+    "background_color": "#231f3e"
   }
+}
