@@ -55,41 +55,33 @@ const create = async (pool, req, res) => {
   req.on("data", (chunk) => (body += chunk));
   req.on("end", async () => {
     try {
-      const {
-        maintenance_mode,
-        title,
-        subtitle,
-        message,
-        start_time,
-        end_time,
-        timezone,
-        icon,
-        display
-      } = JSON.parse(body);
+      const data = JSON.parse(body);
 
       await pool.query(
         `INSERT INTO maintenance_settings
          (maintenance_mode, title, subtitle, message, start_time, end_time, timezone, icon, text_align, theme_color, background_color)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          maintenance_mode ? 1 : 0,
-          title,
-          subtitle,
-          message,
-          start_time,
-          end_time,
-          timezone,
-          icon,
-          display?.text_align || 'center',
-          display?.theme_color || '#000000',
-          display?.background_color || '#ffffff'
+          data.maintenance_mode,
+          data.title,
+          data.subtitle,
+          data.message,
+          formatMySQLDateTime(data.start_time),
+          formatMySQLDateTime(data.end_time),
+          data.timezone,
+          data.icon,
+          data.text_align,
+          data.theme_color,
+          data.background_color
         ]
       );
 
-      sendJSON(res, 201, { message: "Maintenance entry created successfully" });
+      res.writeHead(201, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Maintenance setting created" }));
     } catch (err) {
       console.error(err);
-      sendJSON(res, 500, { error: "Failed to create maintenance entry" });
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Failed to create maintenance config" }));
     }
   });
 };
