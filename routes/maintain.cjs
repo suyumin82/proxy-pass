@@ -18,6 +18,29 @@ module.exports = (pool, parsedUrl, req, res, user) => {
   }
 };
 
+const formatMySQLDateTime = (isoString) => {
+  if (!isoString) return null;
+  try {
+    const date = new Date(isoString);
+    const pad = (n) => (n < 10 ? "0" + n : n);
+    return (
+      date.getFullYear() +
+      "-" +
+      pad(date.getMonth() + 1) +
+      "-" +
+      pad(date.getDate()) +
+      " " +
+      pad(date.getHours()) +
+      ":" +
+      pad(date.getMinutes()) +
+      ":" +
+      pad(date.getSeconds())
+    );
+  } catch {
+    return null;
+  }
+};
+
 const getById = async (pool, req, res) => {
   let body = "";
   req.on("data", (chunk) => (body += chunk));
@@ -59,8 +82,8 @@ const create = async (pool, req, res) => {
 
       await pool.query(
         `INSERT INTO maintenance_settings
-         (maintenance_mode, title, subtitle, message, start_time, end_time, timezone, icon, text_align, theme_color, background_color)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (maintenance_mode, title, subtitle, message, start_time, end_time, timezone, icon, text_align, theme_color, background_color)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           data.maintenance_mode,
           data.title,
