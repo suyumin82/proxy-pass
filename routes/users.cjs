@@ -81,7 +81,7 @@ const getById = async (pool, req, res) => {
   req.on("end", async () => {
     try {
       const { id } = JSON.parse(body);
-      const [rows] = await pool.query("SELECT * FROM users WHERE id = ?", [id]);
+      const [rows] = await pool.query("SELECT id, username, name, role, created_at FROM users WHERE id = ?", [id]);
 
       if (rows.length === 0) {
         return sendJSON(res, 404, { error: "Not found" });
