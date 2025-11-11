@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const Busboy = require("busboy");
+console.log("Busboy constructor:", Busboy); // ← ADD THIS
 
 const sendJSON = (res, code, payload) => {
   res.writeHead(code, { "Content-Type": "application/json" });
