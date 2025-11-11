@@ -94,14 +94,14 @@ const save = async (pool, req, res) => {
 // POST: Upload image stream
 const upload = (req, res) => {
   if (req.method !== "POST") {
-    res.writeHead(405, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({ error: "Method Not Allowed" }));
+    return sendJSON(res, 405, { error: "Method Not Allowed" });
   }
 
-  const busboy = new Busboy({ headers: req.headers }); // This will now work
+  console.log("Creating Busboy instance..."); // Debug
+  const busboy = new Busboy({ headers: req.headers });
   let fileUrl = "";
 
-  busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
+  busboy.on("file", (fieldname, file, filename) => {
     const ext = path.extname(filename) || ".png";
     const newFilename = `${uuidv4()}${ext}`;
     const filepath = path.join(UPLOADS_DIR, newFilename);
@@ -111,18 +111,12 @@ const upload = (req, res) => {
   });
 
   busboy.on("finish", () => {
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ message: "Upload complete", url: fileUrl }));
+    sendJSON(res, 200, { message: "Upload complete", url: fileUrl });
   });
 
   busboy.on("error", (err) => {
-    console.error("Upload error:", err);
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Upload failed" }));
-  });
-
-  req.on("error", (err) => {
-    console.error("Request stream error:", err);
+    console.error("Busboy error:", err);
+    sendJSON(res, 500, { error: "Upload failed" });
   });
 
   req.pipe(busboy);
