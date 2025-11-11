@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
-const Busboy = require("busboy").default;
+const Busboy = require("busboy");
 
 const sendJSON = (res, code, payload) => {
   res.writeHead(code, { "Content-Type": "application/json" });
@@ -97,7 +97,7 @@ const upload = (req, res) => {
     return res.end(JSON.stringify({ error: "Method Not Allowed" }));
   }
 
-  const busboy = new Busboy({ headers: req.headers });
+  const busboy = new Busboy({ headers: req.headers }); // This will now work
   let fileUrl = "";
 
   busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
