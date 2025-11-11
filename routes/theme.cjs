@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
+const Busboy = require("busboy");
 
 const sendJSON = (res, code, payload) => {
   res.writeHead(code, { "Content-Type": "application/json" });
@@ -91,24 +92,28 @@ const save = async (pool, req, res) => {
 
 // POST: Upload image stream
 const upload = (req, res) => {
-  const contentType = req.headers["content-type"] || "";
-  const ext = contentType.includes("jpeg") ? ".jpg" : ".png"; // fallback to .png
+  const busboy = new Busboy({ headers: req.headers });
+  let fileUrl = "";
 
-  const filename = `${uuidv4()}${ext}`;
-  const filepath = path.join(UPLOADS_DIR, filename);
-  const writeStream = fs.createWriteStream(filepath);
+  busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
+    const ext = path.extname(filename) || ".png";
+    const newFilename = `${uuidv4()}${ext}`;
+    const filepath = path.join(UPLOADS_DIR, newFilename);
 
-  req.pipe(writeStream);
+    file.pipe(fs.createWriteStream(filepath));
+    fileUrl = `/images/${newFilename}`;
+  });
 
-  writeStream.on("finish", () => {
-    const fileUrl = `/images/${filename}`;
+  busboy.on("finish", () => {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ message: "Upload complete", url: fileUrl }));
   });
 
-  writeStream.on("error", (err) => {
-    console.error("Upload failed:", err);
+  busboy.on("error", (err) => {
+    console.error("Upload error:", err);
     res.writeHead(500, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Upload failed" }));
   });
+
+  req.pipe(busboy);
 };
