@@ -91,24 +91,23 @@ const save = async (pool, req, res) => {
 
 // POST: Upload image stream
 const upload = (req, res) => {
-  const boundary = req.headers["content-type"]?.split("boundary=")[1];
-  if (!boundary) {
-    res.writeHead(400, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({ error: "Invalid multipart form-data" }));
-  }
+  const contentType = req.headers["content-type"] || "";
+  const ext = contentType.includes("jpeg") ? ".jpg" : ".png"; // fallback to .png
 
-  const filename = `${uuidv4()}.png`;
+  const filename = `${uuidv4()}${ext}`;
   const filepath = path.join(UPLOADS_DIR, filename);
   const writeStream = fs.createWriteStream(filepath);
+
   req.pipe(writeStream);
 
   writeStream.on("finish", () => {
-    const fileUrl = `/uploads/${filename}`;
-    sendJSON(res, 200, { message: "Upload complete", url: fileUrl });
+    const fileUrl = `/images/${filename}`;
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ message: "Upload complete", url: fileUrl }));
   });
 
   writeStream.on("error", (err) => {
-    console.error("Upload error:", err);
+    console.error("Upload failed:", err);
     res.writeHead(500, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Upload failed" }));
   });
