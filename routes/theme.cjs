@@ -92,6 +92,11 @@ const save = async (pool, req, res) => {
 
 // POST: Upload image stream
 const upload = (req, res) => {
+  if (req.method !== "POST") {
+    res.writeHead(405, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ error: "Method Not Allowed" }));
+  }
+
   const busboy = new Busboy({ headers: req.headers });
   let fileUrl = "";
 
@@ -113,6 +118,10 @@ const upload = (req, res) => {
     console.error("Upload error:", err);
     res.writeHead(500, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Upload failed" }));
+  });
+
+  req.on("error", (err) => {
+    console.error("Request stream error:", err);
   });
 
   req.pipe(busboy);
