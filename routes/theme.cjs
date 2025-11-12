@@ -105,85 +105,69 @@ const upload = (req, res) => {
     return sendJSON(res, 400, { error: "Missing boundary" });
   }
 
-  const BOUNDARY      = Buffer.from(`--${boundary}`);
-  const BOUNDARY_END  = Buffer.from(`--${boundary}--`);
-  const HEADER_END    = Buffer.from("\r\n\r\n");
+  const BOUNDARY = `--${boundary}`;
+  const BOUNDARY_END = `--${boundary}--`;
 
-  let chunks      = [];          // collected incoming data
-  let fileStream  = null;        // write-stream for the image
-  let savedUrl    = "";          // /images/xxxx.png
-  let inFilePart  = false;       // true after we have seen the file headers
+  let buffer = Buffer.alloc(0);
+  let fileStream = null;
+  let savedUrl = "";
+  let filename = "";
 
-  const finish = () => {
-    if (!savedUrl) return sendJSON(res, 400, { error: "No file received" });
-    sendJSON(res, 200, { message: "Upload complete", url: savedUrl });
-  };
-
-  req.on("data", chunk => {
-    chunks.push(chunk);
-
-    // ----- FIRST CHUNK – locate the file part -----------------
-    if (!inFilePart) {
-      const buf = Buffer.concat(chunks);
-      const bIdx = buf.indexOf(BOUNDARY);
-      if (bIdx === -1) return;
-
-      const hEnd = buf.indexOf(HEADER_END, bIdx);
-      if (hEnd === -1) return;               // need more data
-
-      const headerText = buf.slice(bIdx, hEnd).toString("utf8");
-      const fnMatch = headerText.match(/filename="([^"]+)"/i);
-      if (!fnMatch) return sendJSON(res, 400, { error: "No filename" });
-
-      // ---- create file -------------------------------------------------
-      const ext = path.extname(fnMatch[1]) || ".png";
-      const name = `${uuidv4()}${ext}`;
-      const fullPath = path.join(UPLOADS_DIR, name);
-      fileStream = fs.createWriteStream(fullPath);
-      savedUrl = `/images/${name}`;
-
-      // write everything **after** \r\n\r\n
-      const start = hEnd + HEADER_END.length;
-      const firstData = buf.slice(start);
-      if (firstData.length) fileStream.write(firstData);
-
-      // keep the part that is still in the buffer
-      chunks = [buf.slice(start)];
-      inFilePart = true;
-      return;
-    }
-
-    // ----- SUBSEQUENT CHUNKS – write until next boundary ----------
-    const buf = Buffer.concat(chunks);
-    const endIdx = buf.indexOf(BOUNDARY_END);
-    const nextIdx = buf.indexOf(BOUNDARY);
-
-    if (endIdx !== -1) {                     // final boundary
-      fileStream.write(buf.slice(0, endIdx));
-      fileStream.end();
-      req.pause();                           // stop reading
-    } else if (nextIdx !== -1) {             // next part starts
-      fileStream.write(buf.slice(0, nextIdx));
-      fileStream.end();
-    } else {
-      fileStream.write(buf);
-    }
-    chunks = [];                             // reset for next round
+  req.on("data", (chunk) => {
+    buffer = Buffer.concat([buffer, chunk]);
   });
 
   req.on("end", () => {
-    if (fileStream) {
-      fileStream.on("finish", finish);
-      fileStream.on("error", err => {
-        console.error("Write error:", err);
-        sendJSON(res, 500, { error: "Write failed" });
+    try {
+      const bufferStr = buffer.toString("binary");
+      
+      // Find the start of the file content (after headers)
+      const headerEnd = bufferStr.indexOf("\r\n\r\n");
+      if (headerEnd === -1) {
+        return sendJSON(res, 400, { error: "Invalid multipart data" });
+      }
+
+      // Extract headers to get filename
+      const headers = bufferStr.substring(0, headerEnd);
+      const filenameMatch = headers.match(/filename="([^"]+)"/i);
+      if (!filenameMatch) {
+        return sendJSON(res, 400, { error: "No filename found" });
+      }
+
+      filename = filenameMatch[1];
+      const ext = path.extname(filename) || ".png";
+      const name = `${uuidv4()}${ext}`;
+      const fullPath = path.join(UPLOADS_DIR, name);
+      savedUrl = `/images/${name}`;
+
+      // Find where file content starts (after \r\n\r\n)
+      const fileStart = headerEnd + 4;
+      
+      // Find where file content ends (before the closing boundary)
+      const boundaryEndPos = bufferStr.indexOf(`\r\n${BOUNDARY}`, fileStart);
+      if (boundaryEndPos === -1) {
+        return sendJSON(res, 400, { error: "Invalid multipart structure" });
+      }
+
+      // Extract only the file binary data (not as string!)
+      const fileData = buffer.slice(fileStart, boundaryEndPos);
+
+      // Write the actual image data to file
+      fs.writeFile(fullPath, fileData, (err) => {
+        if (err) {
+          console.error("Write error:", err);
+          return sendJSON(res, 500, { error: "Failed to save file" });
+        }
+        sendJSON(res, 200, { message: "Upload complete", url: savedUrl });
       });
-    } else {
-      finish();
+
+    } catch (err) {
+      console.error("Upload processing error:", err);
+      sendJSON(res, 500, { error: "Failed to process upload" });
     }
   });
 
-  req.on("error", err => {
+  req.on("error", (err) => {
     console.error("Request error:", err);
     if (fileStream) fileStream.destroy();
     sendJSON(res, 500, { error: "Upload aborted" });
