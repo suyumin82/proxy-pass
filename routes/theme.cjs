@@ -89,104 +89,103 @@ const save = async (pool, req, res) => {
   });
 };
 
-// POST: Upload image stream
+// POST: Upload image – NO BUSBOY
 const upload = (req, res) => {
-  if (req.method !== 'POST') {
-    return sendJSON(res, 405, { error: 'Method Not Allowed' });
+  if (req.method !== "POST") {
+    return sendJSON(res, 405, { error: "Method Not Allowed" });
   }
 
-  const contentType = req.headers['content-type'];
-  if (!contentType || !contentType.includes('multipart/form-data')) {
-    return sendJSON(res, 400, { error: 'Expected multipart/form-data' });
+  const ct = req.headers["content-type"] || "";
+  if (!ct.includes("multipart/form-data")) {
+    return sendJSON(res, 400, { error: "Expected multipart/form-data" });
   }
 
-  const boundary = contentType.split('boundary=')[1];
+  const boundary = ct.split("boundary=")[1];
   if (!boundary) {
-    return sendJSON(res, 400, { error: 'Missing boundary' });
+    return sendJSON(res, 400, { error: "Missing boundary" });
   }
 
-  const boundaryBytes = Buffer.from(`--${boundary}`);
-  const boundaryEnd = Buffer.from(`--${boundary}--`);
-  let chunks = [];
-  let fileStarted = false;
-  let filename = '';
-  let fileStream = null;
-  let fileUrl = '';
+  const BOUNDARY      = Buffer.from(`--${boundary}`);
+  const BOUNDARY_END  = Buffer.from(`--${boundary}--`);
+  const HEADER_END    = Buffer.from("\r\n\r\n");
 
-  const finishUpload = () => {
-    if (!fileUrl) {
-      return sendJSON(res, 400, { error: 'No file uploaded' });
-    }
-    sendJSON(res, 200, { message: 'Upload complete', url: fileUrl });
+  let chunks      = [];          // collected incoming data
+  let fileStream  = null;        // write-stream for the image
+  let savedUrl    = "";          // /images/xxxx.png
+  let inFilePart  = false;       // true after we have seen the file headers
+
+  const finish = () => {
+    if (!savedUrl) return sendJSON(res, 400, { error: "No file received" });
+    sendJSON(res, 200, { message: "Upload complete", url: savedUrl });
   };
 
-  req.on('data', (chunk) => {
+  req.on("data", chunk => {
     chunks.push(chunk);
 
-    // Wait until we have enough data to parse
-    if (!fileStarted && chunks.length > 0) {
-      const buffer = Buffer.concat(chunks);
-      const boundaryIndex = buffer.indexOf(boundaryBytes);
+    // ----- FIRST CHUNK – locate the file part -----------------
+    if (!inFilePart) {
+      const buf = Buffer.concat(chunks);
+      const bIdx = buf.indexOf(BOUNDARY);
+      if (bIdx === -1) return;
 
-      if (boundaryIndex !== -1) {
-        // Find filename from headers
-        const headerEnd = buffer.indexOf(Buffer.from('\r\n\r\n'), boundaryIndex);
-        if (headerEnd !== -1) {
-          const headers = buffer.slice(boundaryIndex, headerEnd).toString();
-          const filenameMatch = headers.match(/filename="([^"]+)"/);
-          if (filenameMatch) {
-            filename = `${uuidv4()}${path.extname(filenameMatch[1]) || '.png'}`;
-            const filepath = path.join(UPLOADS_DIR, filename);
-            fileStream = fs.createWriteStream(filepath);
-            fileUrl = `/images/${filename}`;
+      const hEnd = buf.indexOf(HEADER_END, bIdx);
+      if (hEnd === -1) return;               // need more data
 
-            // Write file content (after \r\n\r\n)
-            const fileStart = headerEnd + 4;
-            const initialData = buffer.slice(fileStart);
-            if (initialData.length > 0) {
-              fileStream.write(initialData);
-            }
-            fileStarted = true;
-            chunks = []; // Clear chunks after first write
-          }
-        }
-      }
-    } else if (fileStarted && fileStream) {
-      // Write incoming chunks to file
-      const buffer = Buffer.from(chunk);
-      const endIndex = buffer.indexOf(boundaryEnd);
-      if (endIndex !== -1) {
-        // Last chunk — write up to boundary
-        fileStream.write(buffer.slice(0, endIndex));
-        fileStream.end();
-        req.pause(); // Stop reading
-      } else {
-        const boundaryIndex = buffer.indexOf(boundaryBytes);
-        if (boundaryIndex !== -1) {
-          fileStream.write(buffer.slice(0, boundaryIndex));
-          fileStream.end();
-        } else {
-          fileStream.write(buffer);
-        }
-      }
+      const headerText = buf.slice(bIdx, hEnd).toString("utf8");
+      const fnMatch = headerText.match(/filename="([^"]+)"/i);
+      if (!fnMatch) return sendJSON(res, 400, { error: "No filename" });
+
+      // ---- create file -------------------------------------------------
+      const ext = path.extname(fnMatch[1]) || ".png";
+      const name = `${uuidv4()}${ext}`;
+      const fullPath = path.join(UPLOADS_DIR, name);
+      fileStream = fs.createWriteStream(fullPath);
+      savedUrl = `/images/${name}`;
+
+      // write everything **after** \r\n\r\n
+      const start = hEnd + HEADER_END.length;
+      const firstData = buf.slice(start);
+      if (firstData.length) fileStream.write(firstData);
+
+      // keep the part that is still in the buffer
+      chunks = [buf.slice(start)];
+      inFilePart = true;
+      return;
     }
+
+    // ----- SUBSEQUENT CHUNKS – write until next boundary ----------
+    const buf = Buffer.concat(chunks);
+    const endIdx = buf.indexOf(BOUNDARY_END);
+    const nextIdx = buf.indexOf(BOUNDARY);
+
+    if (endIdx !== -1) {                     // final boundary
+      fileStream.write(buf.slice(0, endIdx));
+      fileStream.end();
+      req.pause();                           // stop reading
+    } else if (nextIdx !== -1) {             // next part starts
+      fileStream.write(buf.slice(0, nextIdx));
+      fileStream.end();
+    } else {
+      fileStream.write(buf);
+    }
+    chunks = [];                             // reset for next round
   });
 
-  req.on('end', () => {
+  req.on("end", () => {
     if (fileStream) {
-      fileStream.on('finish', finishUpload);
-      fileStream.on('error', (err) => {
-        console.error('File write error:', err);
-        sendJSON(res, 500, { error: 'Upload failed' });
+      fileStream.on("finish", finish);
+      fileStream.on("error", err => {
+        console.error("Write error:", err);
+        sendJSON(res, 500, { error: "Write failed" });
       });
     } else {
-      finishUpload();
+      finish();
     }
   });
 
-  req.on('error', (err) => {
-    console.error('Request error:', err);
+  req.on("error", err => {
+    console.error("Request error:", err);
     if (fileStream) fileStream.destroy();
-    sendJSON(res, 500, { error: 'Upload failed' });
+    sendJSON(res, 500, { error: "Upload aborted" });
   });
 };
