@@ -1,8 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
-const Busboy = require("busboy");
-console.log("Busboy constructor:", Busboy); // ← ADD THIS
 
 const sendJSON = (res, code, payload) => {
   res.writeHead(code, { "Content-Type": "application/json" });
@@ -93,31 +91,102 @@ const save = async (pool, req, res) => {
 
 // POST: Upload image stream
 const upload = (req, res) => {
-  if (req.method !== "POST") {
-    return sendJSON(res, 405, { error: "Method Not Allowed" });
+  if (req.method !== 'POST') {
+    return sendJSON(res, 405, { error: 'Method Not Allowed' });
   }
 
-  console.log("Creating Busboy instance..."); // Debug
-  const busboy = new Busboy({ headers: req.headers });
-  let fileUrl = "";
+  const contentType = req.headers['content-type'];
+  if (!contentType || !contentType.includes('multipart/form-data')) {
+    return sendJSON(res, 400, { error: 'Expected multipart/form-data' });
+  }
 
-  busboy.on("file", (fieldname, file, filename) => {
-    const ext = path.extname(filename) || ".png";
-    const newFilename = `${uuidv4()}${ext}`;
-    const filepath = path.join(UPLOADS_DIR, newFilename);
+  const boundary = contentType.split('boundary=')[1];
+  if (!boundary) {
+    return sendJSON(res, 400, { error: 'Missing boundary' });
+  }
 
-    file.pipe(fs.createWriteStream(filepath));
-    fileUrl = `/images/${newFilename}`;
+  const boundaryBytes = Buffer.from(`--${boundary}`);
+  const boundaryEnd = Buffer.from(`--${boundary}--`);
+  let chunks = [];
+  let fileStarted = false;
+  let filename = '';
+  let fileStream = null;
+  let fileUrl = '';
+
+  const finishUpload = () => {
+    if (!fileUrl) {
+      return sendJSON(res, 400, { error: 'No file uploaded' });
+    }
+    sendJSON(res, 200, { message: 'Upload complete', url: fileUrl });
+  };
+
+  req.on('data', (chunk) => {
+    chunks.push(chunk);
+
+    // Wait until we have enough data to parse
+    if (!fileStarted && chunks.length > 0) {
+      const buffer = Buffer.concat(chunks);
+      const boundaryIndex = buffer.indexOf(boundaryBytes);
+
+      if (boundaryIndex !== -1) {
+        // Find filename from headers
+        const headerEnd = buffer.indexOf(Buffer.from('\r\n\r\n'), boundaryIndex);
+        if (headerEnd !== -1) {
+          const headers = buffer.slice(boundaryIndex, headerEnd).toString();
+          const filenameMatch = headers.match(/filename="([^"]+)"/);
+          if (filenameMatch) {
+            filename = `${uuidv4()}${path.extname(filenameMatch[1]) || '.png'}`;
+            const filepath = path.join(UPLOADS_DIR, filename);
+            fileStream = fs.createWriteStream(filepath);
+            fileUrl = `/images/${filename}`;
+
+            // Write file content (after \r\n\r\n)
+            const fileStart = headerEnd + 4;
+            const initialData = buffer.slice(fileStart);
+            if (initialData.length > 0) {
+              fileStream.write(initialData);
+            }
+            fileStarted = true;
+            chunks = []; // Clear chunks after first write
+          }
+        }
+      }
+    } else if (fileStarted && fileStream) {
+      // Write incoming chunks to file
+      const buffer = Buffer.from(chunk);
+      const endIndex = buffer.indexOf(boundaryEnd);
+      if (endIndex !== -1) {
+        // Last chunk — write up to boundary
+        fileStream.write(buffer.slice(0, endIndex));
+        fileStream.end();
+        req.pause(); // Stop reading
+      } else {
+        const boundaryIndex = buffer.indexOf(boundaryBytes);
+        if (boundaryIndex !== -1) {
+          fileStream.write(buffer.slice(0, boundaryIndex));
+          fileStream.end();
+        } else {
+          fileStream.write(buffer);
+        }
+      }
+    }
   });
 
-  busboy.on("finish", () => {
-    sendJSON(res, 200, { message: "Upload complete", url: fileUrl });
+  req.on('end', () => {
+    if (fileStream) {
+      fileStream.on('finish', finishUpload);
+      fileStream.on('error', (err) => {
+        console.error('File write error:', err);
+        sendJSON(res, 500, { error: 'Upload failed' });
+      });
+    } else {
+      finishUpload();
+    }
   });
 
-  busboy.on("error", (err) => {
-    console.error("Busboy error:", err);
-    sendJSON(res, 500, { error: "Upload failed" });
+  req.on('error', (err) => {
+    console.error('Request error:', err);
+    if (fileStream) fileStream.destroy();
+    sendJSON(res, 500, { error: 'Upload failed' });
   });
-
-  req.pipe(busboy);
 };
