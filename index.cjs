@@ -171,42 +171,28 @@ const logResponse = async (proxyRes, req, res) => {
 // Function to serve static images
 const serveImage = (req, res) => {
   const parsedUrl = url.parse(req.url);
-  const imagePath = path.join(
-    IMAGES_PATH,
-    decodeURIComponent(parsedUrl.pathname.replace("/images/", ""))
-  );
+  const filename  = path.basename(parsedUrl.pathname);   // <-- safer
+  const imagePath = path.join(IMAGES_PATH, filename);
 
   if (!imagePath.startsWith(IMAGES_PATH)) {
-    res.writeHead(403);
-    return res.end("Forbidden");
+    res.writeHead(403); res.end("Forbidden"); return;
   }
 
   const ext = path.extname(imagePath).toLowerCase();
-
   if (!ALLOWED_IMAGE_TYPES[ext]) {
-    res.writeHead(403);
-    return res.end("File type not allowed");
+    res.writeHead(403); res.end("File type not allowed"); return;
   }
 
   fs.readFile(imagePath, (err, data) => {
     if (err) {
-      if (err.code === "ENOENT") {
-        res.writeHead(404);
-        return res.end("Image not found");
-      }
-      res.writeHead(500);
-      return res.end("Internal server error");
+      res.writeHead(err.code === "ENOENT" ? 404 : 500);
+      res.end(err.code === "ENOENT" ? "Not found" : "Server error");
+      return;
     }
-
-    console.log(`\n=== Static Image Request ===`);
-    console.log(`Timestamp: ${new Date().toISOString()}`);
-    console.log(`File: ${imagePath}`);
-    console.log(`Size: ${data.length} bytes`);
-
     res.writeHead(200, {
-      "Content-Type": ALLOWED_IMAGE_TYPES[ext],
+      "Content-Type":   ALLOWED_IMAGE_TYPES[ext],
       "Content-Length": data.length,
-      "Cache-Control": "public, max-age=86400",
+      "Cache-Control":  "public, max-age=86400",
     });
     res.end(data);
   });
