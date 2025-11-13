@@ -76,7 +76,7 @@ const create = async (pool, req, res) => {
           update_type,
           update_message,
           update_url,
-          changelog ? changelog.join("\\n") : ""
+          changelog ? changelog : ""
         ]
       );
 
@@ -122,7 +122,7 @@ const update = async (pool, req, res) => {
           update_type,
           update_message,
           update_url,
-          changelog ? changelog.join("\\n") : "",
+          changelog ? changelog : "",
           id
         ]
       );
