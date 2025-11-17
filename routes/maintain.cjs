@@ -1,3 +1,6 @@
+const fs = require("fs");
+const path = require("path");
+
 const sendJSON = (res, code, payload) => {
   res.writeHead(code, { "Content-Type": "application/json" });
   res.end(JSON.stringify(payload));
@@ -15,6 +18,9 @@ module.exports = (pool, parsedUrl, req, res, user) => {
   }
   if (parsedUrl.pathname.endsWith("/maintain/update")) {
     return update(pool, req, res);
+  }
+  if (parsedUrl.pathname.endsWith("/maintain/activate")) {
+    return activate(pool, req, res);
   }
 };
 
@@ -162,6 +168,53 @@ const update = async (pool, req, res) => {
     } catch (err) {
       console.error(err);
       sendJSON(res, 500, { error: "Failed to update maintenance entry" });
+    }
+  });
+};
+
+const activate = async (pool, req, res) => {
+  let body = "";
+  req.on("data", (chunk) => (body += chunk));
+  req.on("end", async () => {
+    try {
+      const { id } = JSON.parse(body);
+      if (!id) return sendJSON(res, 400, { error: "Missing ID" });
+
+      // Deactivate all
+      await pool.query("UPDATE maintenance_settings SET is_active = 0");
+
+      // Activate the selected
+      await pool.query("UPDATE maintenance_settings SET is_active = 1 WHERE id = ?", [id]);
+
+      // Fetch the activated record
+      const [rows] = await pool.query("SELECT * FROM maintenance_settings WHERE id = ?", [id]);
+      if (rows.length === 0) return sendJSON(res, 404, { error: "Record not found" });
+
+      const item = rows[0];
+      const output = {
+        maintenance_mode: true,
+        title: item.title,
+        subtitle: item.subtitle,
+        message: item.message,
+        start_time: item.start_time,
+        end_time: item.end_time,
+        timezone: item.timezone,
+        icon: item.icon,
+        display: {
+          text_align: item.text_align,
+          theme_color: item.theme_color,
+          background_color: item.background_color
+        }
+      };
+
+      const jsonDir = path.join(__dirname, "../json");
+      if (!fs.existsSync(jsonDir)) fs.mkdirSync(jsonDir);
+      fs.writeFileSync(path.join(jsonDir, "maintenance.json"), JSON.stringify(output, null, 2));
+
+      sendJSON(res, 200, { message: "Activated and exported successfully" });
+    } catch (err) {
+      console.error(err);
+      sendJSON(res, 500, { error: "Failed to activate maintenance" });
     }
   });
 };
