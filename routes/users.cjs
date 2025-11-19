@@ -17,16 +17,24 @@ module.exports = (pool, parsedUrl, req, res) => {
 
     return userCreate(pool, req, res);
   }
+
+  if (parsedUrl.pathname.endsWith("/user/changepassword")) {
+    if (!user) return; // token invalid
+    return changePassword(pool, req, res);
+  }
+
   if (parsedUrl.pathname.endsWith("/user/update")) {
     if (!user) return; // token invalid
 
     return userUpdate(pool, req, res);
   }
+
   if (parsedUrl.pathname.endsWith("/user/list")) {
     if (!user) return; // token invalid
 
     return userList(pool, res);
   }
+
   if (parsedUrl.pathname.endsWith("/user/get")) {
     if (!user) return; // token invalid
 
@@ -110,6 +118,39 @@ const userCreate = async (pool, req, res) => {
     } catch (err) {
       console.error(err);
       sendJSON(res, 500, { error: "User creation failed" });
+    }
+  });
+};
+
+const changePassword = async (pool, req, res) => {
+  let body = "";
+  req.on("data", (chunk) => (body += chunk));
+  req.on("end", async () => {
+    try {
+      const { id, oldPassword, newPassword } = JSON.parse(body);
+      if (!id || !oldPassword || !newPassword) {
+        return sendJSON(res, 400, { error: "Missing required fields" });
+      }
+
+      // Get current user info
+      const [rows] = await pool.query("SELECT password_hash FROM users WHERE id = ?", [id]);
+      if (rows.length === 0) {
+        return sendJSON(res, 404, { error: "User not found" });
+      }
+
+      const user = rows[0];
+      const isMatch = await bcrypt.compare(oldPassword, user.password_hash);
+      if (!isMatch) {
+        return sendJSON(res, 401, { error: "Old password is incorrect" });
+      }
+
+      const newHash = await bcrypt.hash(newPassword, 10);
+      await pool.query("UPDATE users SET password_hash = ? WHERE id = ?", [newHash, id]);
+
+      sendJSON(res, 200, { message: "Password changed successfully" });
+    } catch (err) {
+      console.error(err);
+      sendJSON(res, 500, { error: "Password change failed" });
     }
   });
 };
