@@ -181,10 +181,10 @@ const activate = async (pool, req, res) => {
       if (!id) return sendJSON(res, 400, { error: "Missing ID" });
 
       // Deactivate all
-      await pool.query("UPDATE maintenance_settings SET is_active = 0");
+      await pool.query("UPDATE maintenance_settings SET is_active = 0, maintenance_mode = 0");
 
       // Activate the selected
-      await pool.query("UPDATE maintenance_settings SET is_active = 1 WHERE id = ?", [id]);
+      await pool.query("UPDATE maintenance_settings SET is_active = 1, maintenance_mode = 1 WHERE id = ?", [id]);
 
       // Fetch the activated record
       const [rows] = await pool.query("SELECT * FROM maintenance_settings WHERE id = ?", [id]);
