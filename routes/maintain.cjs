@@ -131,7 +131,9 @@ const update = async (pool, req, res) => {
         end_time,
         timezone,
         icon,
-        display
+        text_align,
+        theme_color,
+        background_color
       } = JSON.parse(body);
 
       await pool.query(
@@ -157,9 +159,9 @@ const update = async (pool, req, res) => {
           end_time,
           timezone,
           icon,
-          display?.text_align || 'center',
-          display?.theme_color || '#000000',
-          display?.background_color || '#ffffff',
+          text_align || 'center',
+          theme_color || '#000000',
+          background_color || '#ffffff',
           id
         ]
       );
