@@ -12,7 +12,7 @@ const pool = mysql.createPool({
   connectionLimit: 50,
   queueLimit: 0,
 });
-const exportPath = path.join(__dirname, 'json/maintenance.json');
+const exportPath = path.join(__dirname, './json/maintenance.json');
 
 const run = async () => {
   try {
