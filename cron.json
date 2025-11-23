@@ -1,0 +1,14 @@
+{
+  "apps": [
+    {
+      "name": "maintenance-cron",
+      "script": "/home/mcw-api/cron.js",
+      "watch": false,
+      "cron_restart": "* * * * *",
+      "log_date_format": "YYYY-MM-DD HH:mm Z",
+      "out_file": "/home/mcw-api/logs/maintenance-cron-out.log",
+      "error_file": "/home/mcw-api/logs/maintenance-cron-error.log",
+      "merge_logs": true
+    }
+  ]
+}
