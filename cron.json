@@ -2,7 +2,7 @@
   "apps": [
     {
       "name": "maintenance-cron",
-      "script": "/home/mcw-api/cron.js",
+      "script": "/home/mcw-api/cron.cjs",
       "watch": false,
       "cron_restart": "* * * * *",
       "log_date_format": "YYYY-MM-DD HH:mm Z",
