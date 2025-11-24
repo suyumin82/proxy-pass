@@ -43,7 +43,7 @@ const run = async () => {
       );
     } else {
       // Load JSON
-      let maintenanceData = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      let maintenanceData = JSON.parse(fs.readFileSync(exportPath, "utf8"));
 
       // Update maintenance_mode to false
       maintenanceData.maintenance_mode = false;
