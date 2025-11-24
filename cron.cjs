@@ -49,7 +49,7 @@ const run = async () => {
       maintenanceData.maintenance_mode = false;
 
       // Save back to file
-      fs.writeFileSync(filePath, JSON.stringify(maintenanceData, null, 2));
+      fs.writeFileSync(exportPath, JSON.stringify(maintenanceData, null, 2));
 
       console.log("maintenance_mode has been updated to false.");
     }
