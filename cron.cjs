@@ -1,6 +1,6 @@
-const mysql = require('mysql2/promise');
-const fs = require('fs');
-const path = require('path');
+const mysql = require("mysql2/promise");
+const fs = require("fs");
+const path = require("path");
 const dotenv = require("dotenv");
 
 // Load environment variables
@@ -16,7 +16,7 @@ const pool = mysql.createPool({
   connectionLimit: 50,
   queueLimit: 0,
 });
-const exportPath = path.join(__dirname, './json/maintenance.json');
+const exportPath = path.join(__dirname, "./json/maintenance.json");
 
 const run = async () => {
   try {
@@ -30,14 +30,29 @@ const run = async () => {
 
     // Step 3: Update these to active
     if (activeRows.length > 0) {
-      const ids = activeRows.map(r => r.id);
-      await pool.query("UPDATE maintenance_settings SET is_active = 1 WHERE id IN (?)", [ids]);
+      const ids = activeRows.map((r) => r.id);
+      await pool.query(
+        "UPDATE maintenance_settings SET is_active = 1 WHERE id IN (?)",
+        [ids]
+      );
 
       // Step 4: Export to ./json/maintenance.json
       fs.writeFileSync(exportPath, JSON.stringify(activeRows, null, 2));
-      console.log(`[{new Date().toISOString()}] Exported {activeRows.length} records to maintenance.json`);
-    }
+      console.log(
+        `[{new Date().toISOString()}] Exported {activeRows.length} records to maintenance.json`
+      );
+    } else {
+      // Load JSON
+      let maintenanceData = JSON.parse(fs.readFileSync(filePath, "utf8"));
 
+      // Update maintenance_mode to false
+      maintenanceData.maintenance_mode = false;
+
+      // Save back to file
+      fs.writeFileSync(filePath, JSON.stringify(maintenanceData, null, 2));
+
+      console.log("maintenance_mode has been updated to false.");
+    }
   } catch (err) {
     console.error("Error during maintenance cron:", err);
   } finally {
