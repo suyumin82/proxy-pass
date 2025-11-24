@@ -2,6 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 
+const DOMAIN = process.env.DOMAIN || "https://apiuat.apppffbo.com";
+
 const sendJSON = (res, code, payload) => {
   res.writeHead(code, { "Content-Type": "application/json" });
   res.end(JSON.stringify(payload));
@@ -50,7 +52,8 @@ const list = async (pool, res) => {
   try {
     const [rows] = await pool.query("SELECT type, url FROM theme_settings WHERE is_active = 1 ORDER BY id ASC");
     const theme = rows.reduce((acc, row) => {
-      acc[row.type] = row.url;
+      const formattedUrl = row.url.startsWith("http") ? row.url : `${DOMAIN}${row.url}`;
+      acc[row.type] = formattedUrl;
       return acc;
     }, {});
     sendJSON(res, 200, { theme });
