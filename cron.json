@@ -4,7 +4,7 @@
       "name": "maintenance-cron",
       "script": "/home/mcw-api/cron.cjs",
       "watch": false,
-      "cron_restart": "* * * * *",
+      "cron_restart": "*/1 * * * *",
       "log_date_format": "YYYY-MM-DD HH:mm Z",
       "out_file": "/home/mcw-api/logs/maintenance-cron-out.log",
       "error_file": "/home/mcw-api/logs/maintenance-cron-error.log",
