@@ -28,30 +28,19 @@ const run = async () => {
       "SELECT * FROM maintenance_settings WHERE NOW() BETWEEN start_time AND end_time"
     );
 
-    // Step 3: Update these to active
     if (activeRows.length > 0) {
       const ids = activeRows.map((r) => r.id);
-      await pool.query(
-        "UPDATE maintenance_settings SET is_active = 1 WHERE id IN (?)",
-        [ids]
-      );
+      await pool.query("UPDATE maintenance_settings SET is_active = 1 WHERE id IN (?)", [ids]);
 
-      // Step 4: Export to ./json/maintenance.json
       fs.writeFileSync(exportPath, JSON.stringify(activeRows, null, 2));
-      console.log(
-        `[{new Date().toISOString()}] Exported {activeRows.length} records to maintenance.json`
-      );
+      console.log(`[${new Date().toISOString()}] Exported ${activeRows.length} records to maintenance.json`);
     } else {
-      // Load JSON
-      let maintenanceData = JSON.parse(fs.readFileSync(exportPath, "utf8"));
-
-      // Update maintenance_mode to false
-      maintenanceData.maintenance_mode = false;
-
-      // Save back to file
-      fs.writeFileSync(exportPath, JSON.stringify(maintenanceData, null, 2));
-
-      console.log("maintenance_mode has been updated to false.");
+      if (fs.existsSync(exportPath)) {
+        let maintenanceData = JSON.parse(fs.readFileSync(exportPath, "utf8"));
+        maintenanceData.maintenance_mode = false;
+        fs.writeFileSync(exportPath, JSON.stringify(maintenanceData, null, 2));
+        console.log(`[${new Date().toISOString()}] Updated maintenance_mode to false in maintenance.json`);
+      }
     }
   } catch (err) {
     console.error("Error during maintenance cron:", err);
@@ -61,3 +50,5 @@ const run = async () => {
 };
 
 run();
+
+process.exit(0);
