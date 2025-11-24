@@ -50,5 +50,3 @@ const run = async () => {
 };
 
 run();
-
-process.exit(0);
