@@ -14,7 +14,7 @@ module.exports = (pool, parsedUrl, req, res, user) => {
   if (parsedUrl.pathname.endsWith("/theme/list")) {
     return list(pool, res);
   }
-  if (parsedUrl.pathname.endsWith("/theme/save")) {
+  if (parsedUrl.pathname.endsWith("/theme/update")) {
     return save(pool, req, res);
   }
   if (parsedUrl.pathname.endsWith("/theme/upload")) {
