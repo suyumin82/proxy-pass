@@ -84,6 +84,24 @@ const save = async (pool, req, res) => {
         [type, url]
       );
 
+      // ✅ If updating logo, copy the file to overwrite logo.png
+      if (type === "logo") {
+        const imageName = path.basename(url); // get filename from url
+        const sourcePath = path.join(__dirname, `../images/${imageName}`);
+        const targetPath = path.join(__dirname, "../images/logo.png");
+
+        try {
+          if (fs.existsSync(sourcePath)) {
+            fs.copyFileSync(sourcePath, targetPath);
+            console.log("✔ logo.png overwritten");
+          } else {
+            console.warn("⚠ source logo not found:", sourcePath);
+          }
+        } catch (copyErr) {
+          console.error("❌ Failed to overwrite logo.png:", copyErr);
+        }
+      }
+
       sendJSON(res, 200, { message: "Theme type saved successfully" });
     } catch (err) {
       console.error(err);
