@@ -88,11 +88,10 @@ const create = async (pool, req, res) => {
 
       await pool.query(
         `INSERT INTO maintenance_settings
-        (maintenance_mode, title, subtitle, message, start_time, end_time, timezone, icon, text_align, theme_color, background_color)
+        (maintenance_mode, subtitle, message, start_time, end_time, timezone, icon, text_align, theme_color, background_color)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           data.maintenance_mode,
-          data.title,
           data.subtitle,
           data.message,
           formatMySQLDateTime(data.start_time),
@@ -124,7 +123,6 @@ const update = async (pool, req, res) => {
       const {
         id,
         maintenance_mode,
-        title,
         subtitle,
         message,
         start_time,
@@ -139,7 +137,6 @@ const update = async (pool, req, res) => {
       await pool.query(
         `UPDATE maintenance_settings SET 
          maintenance_mode = ?,
-         title = ?,
          subtitle = ?,
          message = ?,
          start_time = ?,
@@ -152,7 +149,6 @@ const update = async (pool, req, res) => {
          WHERE id = ?`,
         [
           maintenance_mode ? 1 : 0,
-          title,
           subtitle,
           message,
           start_time,
@@ -195,7 +191,6 @@ const activate = async (pool, req, res) => {
       const item = rows[0];
       const output = {
         maintenance_mode: true,
-        title: item.title,
         subtitle: item.subtitle,
         message: item.message,
         start_time: item.start_time,

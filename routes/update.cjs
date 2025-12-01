@@ -67,13 +67,12 @@ const create = async (pool, req, res) => {
         minimum_version,
         update_type,
         update_message,
-        update_url,
-        changelog
+        update_url
       } = JSON.parse(body);
 
-      await pool.query(
+      const [result] = await pool.query(
         `INSERT INTO app_updates 
-         (update_required, latest_version, minimum_version, update_type, update_message, update_url, changelog)
+         (update_required, latest_version, minimum_version, update_type, update_message, update_url)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           update_required ? 1 : 0,
@@ -81,10 +80,16 @@ const create = async (pool, req, res) => {
           minimum_version,
           update_type,
           update_message,
-          update_url,
-          changelog ? changelog : ""
+          update_url 
         ]
       );
+
+      const newId = result.insertId;
+
+      sendJSON(res, 201, {
+        message: "Update created successfully",
+        id: newId
+      });
 
       sendJSON(res, 201, { message: "Update created successfully" });
     } catch (err) {
