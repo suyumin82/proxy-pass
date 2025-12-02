@@ -90,8 +90,6 @@ const create = async (pool, req, res) => {
         message: "Update created successfully",
         id: newId
       });
-
-      sendJSON(res, 201, { message: "Update created successfully" });
     } catch (err) {
       console.error(err);
       sendJSON(res, 500, { error: "Failed to create update" });

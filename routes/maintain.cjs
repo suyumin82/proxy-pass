@@ -86,7 +86,7 @@ const create = async (pool, req, res) => {
     try {
       const data = JSON.parse(body);
 
-      await pool.query(
+      const [result] = await pool.query(
         `INSERT INTO maintenance_settings
         (maintenance_mode, subtitle, message, start_time, end_time, timezone, icon, text_align, theme_color, background_color)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -104,8 +104,15 @@ const create = async (pool, req, res) => {
         ]
       );
 
-      res.writeHead(201, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ message: "Maintenance setting created" }));
+      // res.writeHead(201, { "Content-Type": "application/json" });
+      // res.end(JSON.stringify({ message: "Maintenance setting created" }));
+      const newId = result.insertId;
+
+      sendJSON(res, 201, {
+        message: "Update created successfully",
+        id: newId
+      });
+
     } catch (err) {
       console.error(err);
       res.writeHead(500, { "Content-Type": "application/json" });
