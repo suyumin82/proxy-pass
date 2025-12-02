@@ -73,7 +73,7 @@ const create = async (pool, req, res) => {
       const [result] = await pool.query(
         `INSERT INTO app_updates 
          (update_required, latest_version, minimum_version, update_type, update_message, update_url)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?)`,
         [
           update_required ? 1 : 0,
           latest_version,
@@ -112,8 +112,7 @@ const update = async (pool, req, res) => {
         minimum_version,
         update_type,
         update_message,
-        update_url,
-        changelog
+        update_url
       } = JSON.parse(body);
 
       await pool.query(
@@ -123,8 +122,7 @@ const update = async (pool, req, res) => {
          minimum_version = ?,
          update_type = ?,
          update_message = ?,
-         update_url = ?,
-         changelog = ?
+         update_url = ?
          WHERE id = ?`,
         [
           update_required ? 1 : 0,
@@ -133,7 +131,6 @@ const update = async (pool, req, res) => {
           update_type,
           update_message,
           update_url,
-          changelog ? changelog : "",
           id
         ]
       );

@@ -89,7 +89,7 @@ const create = async (pool, req, res) => {
       await pool.query(
         `INSERT INTO maintenance_settings
         (maintenance_mode, subtitle, message, start_time, end_time, timezone, icon, text_align, theme_color, background_color)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           data.maintenance_mode,
           data.subtitle,
@@ -130,7 +130,7 @@ const update = async (pool, req, res) => {
         timezone,
         icon,
         text_align,
-        theme_color,
+        theme_color,https://www.youtube.com/watch?v=pPrHQb5FImI
         background_color
       } = JSON.parse(body);
 
