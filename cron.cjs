@@ -21,7 +21,7 @@ const exportPath = path.join(__dirname, "./json/maintenance.json");
 const run = async () => {
   try {
     // Step 1: Set all inactive
-    await pool.query("UPDATE maintenance_settings SET is_active = 0");
+    await pool.query("UPDATE maintenance_settings SET is_active = 0, , maintenance_mode = 0");
 
     // Step 2: Select active record(s) within time range
     const [activeRows] = await pool.query(
@@ -30,7 +30,7 @@ const run = async () => {
 
     if (activeRows.length > 0) {
       const ids = activeRows.map((r) => r.id);
-      await pool.query("UPDATE maintenance_settings SET is_active = 1 WHERE id IN (?)", [ids]);
+      await pool.query("UPDATE maintenance_settings SET is_active = 1, maintenance_mode = 1 WHERE id IN (?)", [ids]);
 
       fs.writeFileSync(exportPath, JSON.stringify(activeRows, null, 2));
       console.log(`[${new Date().toISOString()}] Exported ${activeRows.length} records to maintenance.json`);
