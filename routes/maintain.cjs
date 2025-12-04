@@ -37,28 +37,19 @@ function convertGMT8ToUTC(mysqlDateTimeStr) {
   return `${utcYear}-${utcMonth}-${utcDate} ${utcHour}:${utcMin}:${utcSec}`;
 }
 
-const formatMySQLDateTime = (isoString) => {
-  if (!isoString) return null;
-  try {
-    const date = new Date(isoString);
-    const pad = (n) => (n < 10 ? "0" + n : n);
-    return (
-      date.getFullYear() +
-      "-" +
-      pad(date.getMonth() + 1) +
-      "-" +
-      pad(date.getDate()) +
-      " " +
-      pad(date.getHours()) +
-      ":" +
-      pad(date.getMinutes()) +
-      ":" +
-      pad(date.getSeconds())
-    );
-  } catch {
-    return null;
-  }
-};
+function convertUTCToGMT8(utcDateStr) {
+  const utcDate = new Date(utcDateStr);
+  const gmt8Date = new Date(utcDate.getTime() + 8 * 60 * 60 * 1000); // add 8 hours
+
+  const year = gmt8Date.getFullYear();
+  const month = String(gmt8Date.getMonth() + 1).padStart(2, "0");
+  const day = String(gmt8Date.getDate()).padStart(2, "0");
+  const hour = String(gmt8Date.getHours()).padStart(2, "0");
+  const minute = String(gmt8Date.getMinutes()).padStart(2, "0");
+  const second = String(gmt8Date.getSeconds()).padStart(2, "0");
+
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+}
 
 const getById = async (pool, req, res) => {
   let body = "";
@@ -72,7 +63,13 @@ const getById = async (pool, req, res) => {
         return sendJSON(res, 404, { error: "Not found" });
       }
 
-      sendJSON(res, 200, rows[0]);
+      const converted = rows.map((row) => ({
+        ...row,
+        start_time: convertUTCToGMT8(row.start_time),
+        end_time: convertUTCToGMT8(row.end_time),
+      }));
+
+      sendJSON(res, 200, converted[0]);
     } catch (err) {
       console.error(err);
       sendJSON(res, 500, { error: "Failed to fetch record" });
@@ -84,7 +81,14 @@ const getById = async (pool, req, res) => {
 const list = async (pool, res) => {
   try {
     const [rows] = await pool.query("SELECT * FROM maintenance_settings ORDER BY id DESC");
-    sendJSON(res, 200, { maintenance: rows });
+
+    const converted = rows.map((row) => ({
+      ...row,
+      start_time: convertUTCToGMT8(row.start_time),
+      end_time: convertUTCToGMT8(row.end_time),
+    }));
+
+    sendJSON(res, 200, { maintenance: converted });
   } catch (err) {
     console.error(err);
     sendJSON(res, 500, { error: "Failed to fetch maintenance records" });
