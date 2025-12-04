@@ -24,6 +24,23 @@ module.exports = (pool, parsedUrl, req, res, user) => {
   }
 };
 
+// Helper to convert ISO string to MySQL datetime string in GMT+8
+function convertUTCToMySQLTimeInGMT8(utcString) {
+  const utcDate = new Date(utcString);
+  // GMT+8 offset in milliseconds
+  const gmt8OffsetMs = 8 * 60 * 60 * 1000;
+  const localDate = new Date(utcDate.getTime() + gmt8OffsetMs);
+
+  const yyyy = localDate.getFullYear();
+  const MM = String(localDate.getMonth() + 1).padStart(2, '0');
+  const dd = String(localDate.getDate()).padStart(2, '0');
+  const HH = String(localDate.getHours()).padStart(2, '0');
+  const mm = String(localDate.getMinutes()).padStart(2, '0');
+  const ss = String(localDate.getSeconds()).padStart(2, '0');
+
+  return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
+}
+
 const formatMySQLDateTime = (isoString) => {
   if (!isoString) return null;
   try {
@@ -94,8 +111,8 @@ const create = async (pool, req, res) => {
           data.maintenance_mode,
           data.subtitle,
           data.message,
-          formatMySQLDateTime(data.start_time),
-          formatMySQLDateTime(data.end_time),
+          convertUTCToMySQLTimeInGMT8(data.start_time),
+          convertUTCToMySQLTimeInGMT8(data.end_time),
           data.timezone,
           data.icon,
           data.text_align,
@@ -158,8 +175,8 @@ const update = async (pool, req, res) => {
           maintenance_mode ? 1 : 0,
           subtitle,
           message,
-          start_time,
-          end_time,
+          convertUTCToMySQLTimeInGMT8(start_time),
+          convertUTCToMySQLTimeInGMT8(end_time),
           timezone,
           icon,
           text_align || 'center',
