@@ -137,7 +137,7 @@ const update = async (pool, req, res) => {
         timezone,
         icon,
         text_align,
-        theme_color,https://www.youtube.com/watch?v=pPrHQb5FImI
+        theme_color,
         background_color
       } = JSON.parse(body);
 
