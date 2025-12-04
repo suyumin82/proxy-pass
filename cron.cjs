@@ -30,10 +30,16 @@ const run = async () => {
 
     if (activeRows.length > 0) {
       const ids = activeRows.map((r) => r.id);
+
+      // Step 3a: Update DB
       await pool.query("UPDATE maintenance_settings SET is_active = 1, maintenance_mode = 1 WHERE id IN (?)", [ids]);
 
-      fs.writeFileSync(exportPath, JSON.stringify(activeRows, null, 2));
-      console.log(`[${new Date().toISOString()}] Exported ${activeRows.length} records to maintenance.json`);
+      // Step 3b: Re-fetch updated row(s)
+      const [updatedRows] = await pool.query("SELECT * FROM maintenance_settings WHERE id IN (?)", [ids]);
+
+      // Step 4: Export only the first record
+      fs.writeFileSync(exportPath, JSON.stringify(updatedRows[0], null, 2));
+      console.log(`[${new Date().toISOString()}] Exported active record to maintenance.json`);
     } else {
       if (fs.existsSync(exportPath)) {
         let maintenanceData = JSON.parse(fs.readFileSync(exportPath, "utf8"));
