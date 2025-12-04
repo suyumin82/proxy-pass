@@ -21,7 +21,7 @@ const exportPath = path.join(__dirname, "./json/maintenance.json");
 const run = async () => {
   try {
     // Step 1: Set all inactive
-    await pool.query("UPDATE maintenance_settings SET is_active = 0, , maintenance_mode = 0");
+    await pool.query("UPDATE maintenance_settings SET is_active = 0, maintenance_mode = 0");
 
     // Step 2: Select active record(s) within time range
     const [activeRows] = await pool.query(
