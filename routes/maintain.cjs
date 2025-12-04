@@ -25,20 +25,16 @@ module.exports = (pool, parsedUrl, req, res, user) => {
 };
 
 // Helper to convert ISO string to MySQL datetime string in GMT+8
-function convertUTCToMySQLTimeInGMT8(utcString) {
-  const utcDate = new Date(utcString);
-  // GMT+8 offset in milliseconds
-  const gmt8OffsetMs = 8 * 60 * 60 * 1000;
-  const localDate = new Date(utcDate.getTime() + gmt8OffsetMs);
+function convertGMT8ToUTC(mysqlDateTimeStr) {
+  const localDate = new Date(`${mysqlDateTimeStr}+08:00`); // treat as GMT+8
+  const utcYear = localDate.getUTCFullYear();
+  const utcMonth = String(localDate.getUTCMonth() + 1).padStart(2, '0');
+  const utcDate = String(localDate.getUTCDate()).padStart(2, '0');
+  const utcHour = String(localDate.getUTCHours()).padStart(2, '0');
+  const utcMin = String(localDate.getUTCMinutes()).padStart(2, '0');
+  const utcSec = String(localDate.getUTCSeconds()).padStart(2, '0');
 
-  const yyyy = localDate.getFullYear();
-  const MM = String(localDate.getMonth() + 1).padStart(2, '0');
-  const dd = String(localDate.getDate()).padStart(2, '0');
-  const HH = String(localDate.getHours()).padStart(2, '0');
-  const mm = String(localDate.getMinutes()).padStart(2, '0');
-  const ss = String(localDate.getSeconds()).padStart(2, '0');
-
-  return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
+  return `${utcYear}-${utcMonth}-${utcDate} ${utcHour}:${utcMin}:${utcSec}`;
 }
 
 const formatMySQLDateTime = (isoString) => {
@@ -111,8 +107,8 @@ const create = async (pool, req, res) => {
           data.maintenance_mode,
           data.subtitle,
           data.message,
-          convertUTCToMySQLTimeInGMT8(data.start_time),
-          convertUTCToMySQLTimeInGMT8(data.end_time),
+          convertGMT8ToUTC(data.start_time),
+          convertGMT8ToUTC(data.end_time),
           data.timezone,
           data.icon,
           data.text_align,
@@ -175,8 +171,8 @@ const update = async (pool, req, res) => {
           maintenance_mode ? 1 : 0,
           subtitle,
           message,
-          convertUTCToMySQLTimeInGMT8(start_time),
-          convertUTCToMySQLTimeInGMT8(end_time),
+          convertGMT8ToUTC(start_time),
+          convertGMT8ToUTC(end_time),
           timezone,
           icon,
           text_align || 'center',
