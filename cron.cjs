@@ -38,7 +38,23 @@ const run = async () => {
       const [updatedRows] = await pool.query("SELECT * FROM maintenance_settings WHERE id IN (?)", [ids]);
 
       // Step 4: Export only the first record
-      const output = { ...updatedRows[0], maintenance_mode: true };
+      const row = updatedRows[0];
+      const output = {
+        maintenance_mode: true,
+        title: "MAINTENANCE",
+        subtitle: row.subtitle || "",
+        message: row.message || "",
+        start_time: new Date(row.start_time).toISOString().replace("Z", "+08:00"),
+        end_time: new Date(row.end_time).toISOString().replace("Z", "+08:00"),
+        timezone: row.timezone || "GMT+8",
+        icon: row.icon || "maintenance",
+        display: {
+          text_align: row.text_align || "center",
+          theme_color: row.theme_color || "#000000",
+          background_color: row.background_color || "#ffffff"
+        }
+      };
+
       fs.writeFileSync(exportPath, JSON.stringify(output, null, 2));
       console.log(`[${new Date().toISOString()}] Exported active record to maintenance.json`);
     } else {
