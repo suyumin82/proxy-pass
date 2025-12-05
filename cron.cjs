@@ -38,7 +38,8 @@ const run = async () => {
       const [updatedRows] = await pool.query("SELECT * FROM maintenance_settings WHERE id IN (?)", [ids]);
 
       // Step 4: Export only the first record
-      fs.writeFileSync(exportPath, JSON.stringify(updatedRows[0], null, 2));
+      const output = { ...updatedRows[0], maintenance_mode: true };
+      fs.writeFileSync(exportPath, JSON.stringify(output, null, 2));
       console.log(`[${new Date().toISOString()}] Exported active record to maintenance.json`);
     } else {
       if (fs.existsSync(exportPath)) {
