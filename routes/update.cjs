@@ -66,8 +66,7 @@ const create = async (pool, req, res) => {
         latest_version,
         minimum_version,
         update_type,
-        update_message,
-        update_url
+        update_message
       } = JSON.parse(body);
 
       const [result] = await pool.query(
@@ -80,7 +79,7 @@ const create = async (pool, req, res) => {
           minimum_version,
           update_type,
           update_message,
-          update_url 
+          'https://play.google.com/store/apps/details?id=com.mcwplay4fun.newcity' 
         ]
       );
 
