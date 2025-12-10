@@ -608,6 +608,13 @@ proxy.on("proxyRes", (proxyRes, req, res) => {
         JSON.stringify(proxyRes.headers, null, 2)
       );
 
+      try {
+        const parsedBody = JSON.parse(responseBody);okokoko
+        console.log("Response Body:", JSON.stringify(parsedBody, null, 2));
+      } catch (e) {
+        console.log("Response Body (raw):", responseBody);
+      }
+
       if (req.url === "/api/bd/v2_1/user/getInboxFromDC") {
         try {
           const parsedBody = JSON.parse(responseBody);
