@@ -609,7 +609,7 @@ proxy.on("proxyRes", (proxyRes, req, res) => {
       );
 
       try {
-        const parsedBody = JSON.parse(responseBody);okokoko
+        const parsedBody = JSON.parse(responseBody);
         console.log("Response Body:", JSON.stringify(parsedBody, null, 2));
       } catch (e) {
         console.log("Response Body (raw):", responseBody);

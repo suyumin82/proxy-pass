@@ -149,13 +149,13 @@ const activate = async (pool, req, res) => {
       if (!id) return sendJSON(res, 400, { error: "Missing ID" });
 
       // Deactivate all
-      await pool.query("UPDATE update_settings SET is_active = 0");
+      await pool.query("UPDATE app_updates SET is_active = 0");
 
       // Activate selected
-      await pool.query("UPDATE update_settings SET is_active = 1 WHERE id = ?", [id]);
+      await pool.query("UPDATE app_updates SET is_active = 1 WHERE id = ?", [id]);
 
       // Fetch the activated record
-      const [rows] = await pool.query("SELECT * FROM update_settings WHERE id = ?", [id]);
+      const [rows] = await pool.query("SELECT * FROM app_updates WHERE id = ?", [id]);
       if (rows.length === 0) return sendJSON(res, 404, { error: "Record not found" });
 
       const item = rows[0];
