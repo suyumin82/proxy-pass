@@ -109,6 +109,7 @@ const update = async (pool, req, res) => {
         minimum_version,
         update_type,
         update_message,
+        is_active,
         update_url
       } = JSON.parse(body);
 
@@ -119,7 +120,8 @@ const update = async (pool, req, res) => {
          minimum_version = ?,
          update_type = ?,
          update_message = ?,
-         update_url = ?
+         update_url = ?, 
+         is_active = ? 
          WHERE id = ?`,
         [
           update_required ? 1 : 0,
@@ -128,6 +130,7 @@ const update = async (pool, req, res) => {
           update_type,
           update_message,
           update_url,
+          is_active ? 1 : 0,
           id
         ]
       );
