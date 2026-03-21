@@ -5,14 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
 const dotenv = require("dotenv");
-const mysql = require("mysql2/promise");
-const userRouter = require("./routes/users.cjs");
-const updateRouter = require("./routes/update.cjs");
-const maintainRouter = require("./routes/maintain.cjs");
-const gameRouter = require("./routes/game.cjs");
-const themeRouter = require('./routes/theme.cjs');
-const verifyJWT = require("./utils/auth.cjs");
-const setCORS = require("./utils/cors.cjs");
+//const mysql = require("mysql2/promise");
 
 // Load environment variables
 dotenv.config();
@@ -39,51 +32,46 @@ const ALLOWED_IMAGE_TYPES = {
 
 // List of API endpoints to proxy
 const API_ENDPOINTS = [
-  "/api/bd/v2_1/bonus/dailyStreakChallengeCheckIn",
-  "/api/bd/v2_1/bonus/claimDailyStreakChallenge",
-  "/api/bd/v2_1/bonus/getDailyStreakChallengeData",
-  "/api/bd/v2_1/bonus/getReferBonus",
-  "/api/bd/v2_1/message/getFeaturedGames",
-  "/api/bd/v2_1/message/getMessageByTypes",
-  "/api/bd/v2_1/message/getMessageDetailById",
-  "/api/bd/v2_1/provider/getCategoriesByGroup",
-  "/api/bd/v2_1/provider/getCategoriesByGroup",
-  "/api/bd/v2_1/provider/getGameListByCategory",
-  "/api/bd/v2_1/provider/getGameUrl",
-  "/api/bd/v2_1/provider/getFavouriteGames",
-  "/api/bd/v2_1/provider/getVendors",
-  "/api/bd/v2_1/provider/setFavoriteByGameId",
-  "/api/bd/v2_1/report/generateSettledBetsDetail",
   "/api/bd/v2_1/report/generateSettledBetsSummary",
-  "/api/bd/v2_1/report/generateUnsettledBetsDetail",
   "/api/bd/v2_1/setting/getCustomerService",
   "/api/bd/v2_1/setting/getRegisterSetting",
-  "/api/bd/v2_1/user/changePassword",
+  "/api/bd/v2_1/provider/getFavouriteGames",
+  "/api/bd/v2_1/provider/setFavoriteByGameId",
+  "/api/bd/v2_1/provider/getGameListByCategory",
+  "/api/bd/v2_1/provider/getGameUrl",
   "/api/bd/v2_1/user/deleteInbox",
-  "/api/bd/v2_1/user/forgotPassword",
-  "/api/bd/v2_1/user/getBalance",
   "/api/bd/v2_1/user/getCaptchaCode",
   "/api/bd/v2_1/user/getInboxFromDC",
   "/api/bd/v2_1/user/getPlayerInfo",
   "/api/bd/v2_1/user/getProfile",
+  "/api/bd/v2_1/user/forgotPassword",
   "/api/bd/v2_1/user/getVerifyCodeByContactType",
   "/api/bd/v2_1/user/login",
+  "/api/bd/v2_1/user/register",
   "/api/bd/v2_1/user/readInbox",
   "/api/bd/v2_1/user/refreshToken",
-  "/api/bd/v2_1/user/register",
   "/api/bd/v2_1/user/verifyContact",
+  "/api/bd/v2_1/user/changePassword",
+  "/api/bd/v2_1/provider/getCategoriesByGroup",
+  "/api/bd/v2_1/provider/getVendors",
+  "/api/bd/v2_1/user/getBalance",
+  "/api/bd/v2_1/report/generateSettledBetsDetail",
+  "/api/bd/v2_1/report/generateUnsettledBetsDetail",
+  "/api/bd/v2_1/message/getMessageByTypes",
+  "/api/bd/v2_1/provider/getCategoriesByGroup",
+  "/api/bd/v2_1/message/getFeaturedGames",
 ];
 
-//✅ 1. MySQL connection pool
-const pool = mysql.createPool({
-  host: process.env.DBHOST,
-  user: process.env.DBUSER,
-  password: process.env.DBPWD,
-  database: process.env.DATABASE,
-  waitForConnections: true,
-  connectionLimit: 50,
-  queueLimit: 0,
-});
+// âœ… 1. MySQL connection pool
+// const pool = mysql.createPool({
+//   host: process.env.DBHOST,
+//   user: process.env.USER,
+//   password: process.env.PWD,
+//   database: process.env.DATABASE,
+//   waitForConnections: true,
+//   connectionLimit: 10,
+//   queueLimit: 0,
+// });
 
 // Function to log request details
 const logRequest = (req, body = "") => {
@@ -219,14 +207,6 @@ const serveImage = (req, res) => {
 
 // Create server
 const server = http.createServer((req, res) => {
-  setCORS(res);
-
-  if (req.method === "OPTIONS") {
-    res.writeHead(204);
-    res.end();
-    return;
-  }
-
   const parsedUrl = url.parse(req.url);
 
   if (parsedUrl.pathname.startsWith("/images/")) {
@@ -254,44 +234,12 @@ const server = http.createServer((req, res) => {
   }
 
   if (parsedUrl.pathname === `${MCW_API_PATH}v2/game`) {
+    console.log("Start!!");
     return gameCategory(req, res);
   }
 
   if (parsedUrl.pathname === `${MCW_API_PATH}v2/maintenance`) {
     return getMaintenance(req, res);
-  }
-
-  if (parsedUrl.pathname.startsWith(`${MCW_API_PATH}v2/user`)) {
-    setCORS(res);
-    return userRouter(pool, parsedUrl, req, res);
-  }
-
-  if (parsedUrl.pathname.startsWith(`${MCW_API_PATH}v2/updates`)) {
-    setCORS(res);
-    const user = verifyJWT(req, res);
-    if (!user) return;
-    return updateRouter(pool, parsedUrl, req, res, user);
-  }
-
-  if (parsedUrl.pathname.startsWith(`${MCW_API_PATH}v2/maintain`)) {
-    setCORS(res);
-    const user = verifyJWT(req, res);
-    if (!user) return;
-    return maintainRouter(pool, parsedUrl, req, res, user);
-  }
-
-  if (parsedUrl.pathname.startsWith(`${MCW_API_PATH}v2/games`)) {
-    setCORS(res);
-    const user = verifyJWT(req, res);
-    if (!user) return;
-    return gameRouter(pool, parsedUrl, req, res, user);
-  }
-
-  if (parsedUrl.pathname.startsWith(`${MCW_API_PATH}v2/theme`)) {
-    setCORS(res);
-    const user = verifyJWT(req, res);
-    if (!user) return;
-    return themeRouter(pool, parsedUrl, req, res, user);
   }
 
   if (API_ENDPOINTS.includes(parsedUrl.pathname)) {
@@ -504,17 +452,11 @@ const transformHtmlWithBackground = (html) => {
     );
 
     // 4. Remove any trailing parenthesis or semicolon after style
-    cleaned = cleaned.replace(
-      /background-size:100%;\s*\);?/gi,
-      "background-size:100%;"
-    );
+    cleaned = cleaned.replace(/background-size:100%;\s*\);?/gi, "background-size:100%;");
 
     // 5. Clean up extra semicolons and spaces in style attribute
     cleaned = cleaned.replace(/\sstyle="([^"]*)"/gi, (match, style) => {
-      const cleanedStyle = style
-        .replace(/;;+/g, ";")
-        .replace(/\s+/g, " ")
-        .trim();
+      const cleanedStyle = style.replace(/;;+/g, ";").replace(/\s+/g, " ").trim();
       return ` style="${cleanedStyle}"`;
     });
 
@@ -541,6 +483,7 @@ const ping = async (req, res) => {
 };
 
 const gameCategory = async (req, res) => {
+  console.log("game category");
   try {
     const [rows] = await pool.query(
       "SELECT category_id, display_order, name, display_name FROM games ORDER BY display_order ASC"
@@ -612,6 +555,7 @@ proxy.on("proxyRes", (proxyRes, req, res) => {
         "Response Headers:",
         JSON.stringify(proxyRes.headers, null, 2)
       );
+
 
       try {
         const parsedBody = JSON.parse(responseBody);
