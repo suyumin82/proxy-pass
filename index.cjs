@@ -11,6 +11,7 @@ const updateRouter = require("./routes/update.cjs");
 const maintainRouter = require("./routes/maintain.cjs");
 const gameRouter = require("./routes/game.cjs");
 const themeRouter = require('./routes/theme.cjs');
+const logsRouter = require("./routes/logs.cjs");
 const verifyJWT = require("./utils/auth.cjs");
 const setCORS = require("./utils/cors.cjs");
 
@@ -85,6 +86,38 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
+const API_LOG_TABLE = process.env.API_LOG_TABLE || "api_logs";
+
+const stringifyForStorage = (value) => {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch (err) {
+    return String(value);
+  }
+};
+
+const saveApiLog = ({ apiName, type, headers, body }) => {
+  const serializedHeaders = stringifyForStorage(headers);
+  const serializedBody = stringifyForStorage(body);
+
+  const sql = `INSERT INTO ${API_LOG_TABLE} (api_name, \\`type\\`, \\`date\\`, body, header)
+               VALUES (?, ?, ?, ?, ?)`;
+
+  return pool
+    .query(sql, [apiName, type, new Date(), serializedBody, serializedHeaders])
+    .catch((err) => {
+      console.error(`Failed to persist ${type} log for ${apiName}:`, err);
+    });
+};
+
 // Function to log request details
 const logRequest = (req, body = "") => {
   const timestamp = new Date().toISOString();
@@ -102,6 +135,13 @@ const logRequest = (req, body = "") => {
       console.log("Body:", body);
     }
   }
+
+  saveApiLog({
+    apiName: req.url,
+    type: "request",
+    headers: req.headers,
+    body,
+  });
 };
 
 // Function to decompress response
@@ -151,6 +191,13 @@ const logResponse = async (proxyRes, req, res) => {
       // Decompress the response if it's compressed
       const decompressedBuffer = await decompressResponse(buffer, encoding);
       const responseBody = decompressedBuffer.toString("utf8");
+      const persistResponseLog = (payload) =>
+        saveApiLog({
+          apiName: req.url,
+          type: "response",
+          headers: proxyRes.headers,
+          body: payload,
+        });
 
       console.log("\n=== Response Log ===");
       console.log(`Timestamp: ${new Date().toISOString()}`);
@@ -292,6 +339,13 @@ const server = http.createServer((req, res) => {
     const user = verifyJWT(req, res);
     if (!user) return;
     return themeRouter(pool, parsedUrl, req, res, user);
+  }
+
+  if (parsedUrl.pathname.startsWith(`${MCW_API_PATH}v2/logs`)) {
+    setCORS(res);
+    const user = verifyJWT(req, res);
+    if (!user) return;
+    return logsRouter(pool, parsedUrl, req, res, user);
   }
 
   if (API_ENDPOINTS.includes(parsedUrl.pathname)) {
@@ -626,6 +680,7 @@ proxy.on("proxyRes", (proxyRes, req, res) => {
           const cleaned = removeBackgroundImage(parsedBody);
           const finalBody = JSON.stringify(cleaned);
 
+          persistResponseLog(finalBody);
           res.writeHead(proxyRes.statusCode || 200, {
             "Content-Type": "application/json",
             "Content-Length": Buffer.byteLength(finalBody),
@@ -634,6 +689,7 @@ proxy.on("proxyRes", (proxyRes, req, res) => {
           return res.end(finalBody);
         } catch (e) {
           console.error("Failed to parse JSON for cleaning:", e);
+          persistResponseLog(responseBody);
           responseSent = true; // <-- Set guard
           return res.end(responseBody);
         }
@@ -642,6 +698,7 @@ proxy.on("proxyRes", (proxyRes, req, res) => {
           const parsedBody = JSON.parse(responseBody);
           const cleaned = convertBackgroundToImgSrc(parsedBody);
           const finalBody = JSON.stringify(cleaned);
+          persistResponseLog(finalBody);
           res.writeHead(proxyRes.statusCode || 200, {
             "Content-Type": "application/json",
             "Content-Length": Buffer.byteLength(finalBody),
@@ -650,6 +707,7 @@ proxy.on("proxyRes", (proxyRes, req, res) => {
           return res.end(finalBody);
         } catch (e) {
           console.error("Failed to parse JSON for cleaning:", e);
+          persistResponseLog(responseBody);
           responseSent = true; // <-- Set guard
           return res.end(responseBody);
         }
@@ -657,6 +715,7 @@ proxy.on("proxyRes", (proxyRes, req, res) => {
 
       // Fallback: forward response unmodified
       if (!responseSent) {
+        persistResponseLog(responseBody);
         res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
         res.end(buffer);
         responseSent = true;
@@ -664,6 +723,7 @@ proxy.on("proxyRes", (proxyRes, req, res) => {
     } catch (err) {
       if (!responseSent) {
         console.error("Failed to handle proxy response:", err);
+        persistResponseLog("Proxy error while reading response");
         res.writeHead(500);
         res.end("Proxy error while reading response");
         responseSent = true;
