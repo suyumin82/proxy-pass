@@ -14,6 +14,7 @@ const verifyJWT = (req, res) => {
   } catch (err) {
     res.writeHead(403, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Token expired or invalid" }));
+    console.log("JWT verification failed:", err.message);
     return null;
   }
 };
