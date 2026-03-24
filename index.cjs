@@ -12,6 +12,7 @@ const maintainRouter = require("./routes/maintain.cjs");
 const gameRouter = require("./routes/game.cjs");
 const themeRouter = require('./routes/theme.cjs');
 const logsRouter = require("./routes/logs.cjs");
+const faqRouter = require("./routes/faq.cjs");
 const verifyJWT = require("./utils/auth.cjs");
 const setCORS = require("./utils/cors.cjs");
 
@@ -340,6 +341,13 @@ const server = http.createServer((req, res) => {
     const user = verifyJWT(req, res);
     if (!user) return;
     return themeRouter(pool, parsedUrl, req, res, user);
+  }
+
+  if (parsedUrl.pathname.startsWith(`${MCW_API_PATH}v2/faq`)) {
+    setCORS(res);
+    const user = verifyJWT(req, res);
+    if (!user) return;
+    return faqRouter(pool, parsedUrl, req, res, user);
   }
 
   if (parsedUrl.pathname.startsWith(`${MCW_API_PATH}v2/logs`)) {
