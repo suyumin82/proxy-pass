@@ -66,20 +66,30 @@ const create = async (pool, req, res) => {
         latest_version,
         minimum_version,
         update_type,
-        update_message
+        update_message,
+        is_active = 0,
+        update_url
       } = JSON.parse(body);
+
+      if (is_active) {
+        await pool.query("UPDATE app_updates SET is_active = 0");
+      }
+
+      const targetUrl =
+        update_url || 'https://play.google.com/store/apps/details?id=com.mcwplay4fun.newcity';
 
       const [result] = await pool.query(
         `INSERT INTO app_updates 
-         (update_required, latest_version, minimum_version, update_type, update_message, update_url)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+         (update_required, latest_version, minimum_version, update_type, update_message, update_url, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           update_required ? 1 : 0,
           latest_version,
           minimum_version,
           update_type,
           update_message,
-          'https://play.google.com/store/apps/details?id=com.mcwplay4fun.newcity' 
+          targetUrl,
+          is_active ? 1 : 0
         ]
       );
 
@@ -112,6 +122,14 @@ const update = async (pool, req, res) => {
         is_active,
         update_url
       } = JSON.parse(body);
+
+      if (!id) {
+        return sendJSON(res, 400, { error: "Missing ID" });
+      }
+
+      if (is_active) {
+        await pool.query("UPDATE app_updates SET is_active = 0 WHERE id <> ?", [id]);
+      }
 
       await pool.query(
         `UPDATE app_updates SET 
