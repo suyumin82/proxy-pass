@@ -688,6 +688,13 @@ proxy.on("proxyRes", (proxyRes, req, res) => {
     try {
       const decompressedBuffer = await decompressResponse(buffer, encoding);
       const responseBody = decompressedBuffer.toString("utf8");
+      const persistResponseLog = (payload) =>
+        saveApiLog({
+          apiName: req.url,
+          type: "response",
+          headers: proxyRes.headers,
+          body: payload,
+        });
 
       console.log("\n=== Response Log ===");
       console.log(`Timestamp: ${new Date().toISOString()}`);
