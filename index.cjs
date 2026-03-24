@@ -108,7 +108,8 @@ const saveApiLog = ({ apiName, type, headers, body }) => {
   const serializedHeaders = stringifyForStorage(headers);
   const serializedBody = stringifyForStorage(body);
 
-  const sql = `INSERT INTO ${API_LOG_TABLE} (api_name, \\`type\\`, \\`date\\`, body, header)
+  const columns = "(api_name, `type`, `date`, body, header)";
+  const sql = `INSERT INTO ${API_LOG_TABLE} ${columns}
                VALUES (?, ?, ?, ?, ?)`;
 
   return pool
