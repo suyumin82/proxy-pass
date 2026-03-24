@@ -355,7 +355,37 @@ const server = http.createServer((req, res) => {
       body += chunk.toString();
     });
 
+    const getForwardedIp = (req) => {
+      const rawHeader = req.headers["x-forwarded-for"];
+      if (!rawHeader) return null;
+
+      // header may contain: "203.0.113.4, 10.0.0.2"
+      const first = rawHeader
+        .split(",")
+        .map((ip) => ip.trim())
+        .find(Boolean);
+
+      return first || null;
+    };
+
     req.on("end", () => {
+      const forwardedIp = getForwardedIp(req);
+
+      if (forwardedIp) {
+        try {
+          const parsedBody = JSON.parse(body || "{}");
+          if (parsedBody && typeof parsedBody === "object") {
+            parsedBody.realIp = forwardedIp; // overwrite only when header exists
+            body = JSON.stringify(parsedBody);
+          }
+        } catch (parseErr) {
+          console.warn("Could not inject realIp – body not JSON:", parseErr);
+        }
+      }
+
+      const bodyBuffer = Buffer.from(body || "");
+      req.headers["content-length"] = Buffer.byteLength(bodyBuffer).toString();
+      
       // Log the complete request including body
       logRequest(req, body);
 
