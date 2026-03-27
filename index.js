@@ -626,4 +626,17 @@ if (!fs.existsSync(IMAGES_PATH)) {
 server.listen(PORT, () => {
   console.log(`Proxy server is running on port ${PORT}`);
   console.log(`Serving images from: ${IMAGES_PATH}`);
+
+  console.log("pool configuration:");
+  console.log({
+    host: process.env.DBHOST,
+    user: process.env.USER,
+    password: process.env.PWD, 
+    database: process.env.DATABASE,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  });
+
+  console.log(pool ? "MySQL connection pool created successfully" : "Failed to create MySQL connection pool");
 });

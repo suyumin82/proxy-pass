@@ -8,8 +8,6 @@ const sendJSON = (res, code, payload) => {
 };
 
 module.exports = (pool, parsedUrl, req, res) => {
-  console.log("pool:", pool.config.host, pool.config.user, pool.config.database, pool.config.password); // Debugging line to check pool configuration 
-  
   if (parsedUrl.pathname.endsWith("/user/login")) {
     return userLogin(pool, req, res);
   }
