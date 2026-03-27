@@ -62,16 +62,16 @@ const API_ENDPOINTS = [
   "/api/bd/v2_1/message/getFeaturedGames",
 ];
 
-// âœ… 1. MySQL connection pool
-// const pool = mysql.createPool({
-//   host: process.env.DBHOST,
-//   user: process.env.USER,
-//   password: process.env.PWD,
-//   database: process.env.DATABASE,
-//   waitForConnections: true,
-//   connectionLimit: 10,
-//   queueLimit: 0,
-// });
+// 1. MySQL connection pool
+const pool = mysql.createPool({
+  host: process.env.DBHOST,
+  user: process.env.USER,
+  password: process.env.PWD,
+  database: process.env.DATABASE,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
 
 // Function to log request details
 const logRequest = (req, body = "") => {
