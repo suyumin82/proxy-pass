@@ -627,7 +627,6 @@ server.listen(PORT, () => {
   console.log(`Proxy server is running on port ${PORT}`);
   console.log(`Serving images from: ${IMAGES_PATH}`);
 
-  console.log("pool configuration:");
   console.log({
     host: process.env.DBHOST,
     user: process.env.USER,
