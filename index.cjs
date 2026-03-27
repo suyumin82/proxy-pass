@@ -788,4 +788,11 @@ if (!fs.existsSync(IMAGES_PATH)) {
 server.listen(PORT, () => {
   console.log(`Proxy server is running on port ${PORT}`);
   console.log(`Serving images from: ${IMAGES_PATH}`);
+
+  console.log("pool config:", {
+    host: process.env.DBHOST,
+    user: process.env.DBUSER,
+    password: process.env.DBPWD, 
+    database: process.env.DATABASE,
+  });
 });
