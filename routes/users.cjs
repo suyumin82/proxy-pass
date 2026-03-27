@@ -8,6 +8,8 @@ const sendJSON = (res, code, payload) => {
 };
 
 module.exports = (pool, parsedUrl, req, res) => {
+  console.log("pool:", pool);
+  
   if (parsedUrl.pathname.endsWith("/user/login")) {
     return userLogin(pool, req, res);
   }

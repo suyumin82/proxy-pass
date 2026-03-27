@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
 const dotenv = require("dotenv");
-//const mysql = require("mysql2/promise");
+const mysql = require("mysql2/promise");
 
 // Load environment variables
 dotenv.config();
