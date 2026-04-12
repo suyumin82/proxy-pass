@@ -7,6 +7,9 @@ const sendJSON = (res, code, payload) => {
 };
 
 module.exports = (pool, parsedUrl, req, res, user) => {
+  if (parsedUrl.pathname.endsWith("/maintain/status")) {
+    return status(pool, res);
+  }
   if (parsedUrl.pathname.endsWith("/maintain/list")) {
     return list(pool, res);
   }
@@ -21,6 +24,45 @@ module.exports = (pool, parsedUrl, req, res, user) => {
   }
   if (parsedUrl.pathname.endsWith("/maintain/activate")) {
     return activate(pool, req, res);
+  }
+};
+
+const formatMaintenanceStatus = (data) => ({
+  maintenance_mode: !!data.maintenance_mode,
+  title: data.title,
+  subtitle: data.subtitle,
+  message: data.message,
+  start_time: data.start_time,
+  end_time: data.end_time,
+  timezone: data.timezone,
+  icon: data.icon,
+  display: {
+    text_align: data.text_align,
+    theme_color: data.theme_color,
+    background_color: data.background_color,
+  },
+});
+
+const status = async (pool, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT * FROM maintenance_settings
+       WHERE is_active = 1
+         AND maintenance_mode = 1
+         AND start_time <= UTC_TIMESTAMP()
+         AND end_time >= UTC_TIMESTAMP()
+       ORDER BY id DESC
+       LIMIT 1`
+    );
+
+    if (rows.length === 0) {
+      return sendJSON(res, 200, {});
+    }
+
+    sendJSON(res, 200, formatMaintenanceStatus(rows[0]));
+  } catch (err) {
+    console.error(err);
+    sendJSON(res, 500, { error: "Failed to fetch maintenance status" });
   }
 };
 

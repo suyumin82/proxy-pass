@@ -7,6 +7,9 @@ const sendJSON = (res, code, payload) => {
 };
 
 module.exports = (pool, parsedUrl, req, res, user) => {
+  if (parsedUrl.pathname.endsWith("/updates/status")) {
+    return forceUpdate(pool, res);
+  }
   if (parsedUrl.pathname.endsWith("/updates/list")) {
     return list(pool, res);
   }
@@ -21,6 +24,33 @@ module.exports = (pool, parsedUrl, req, res, user) => {
   }
   if (parsedUrl.pathname.endsWith("/updates/activate")) {
     return activate(pool, req, res);
+  }
+};
+
+const formatForceUpdate = (data) => ({
+  update_required: !!data.update_required,
+  latest_version: data.latest_version,
+  minimum_version: data.minimum_version,
+  update_type: data.update_type,
+  update_message: data.update_message,
+  update_url: data.update_url,
+  changelog: data.changelog ? data.changelog.split("\n") : [],
+});
+
+const forceUpdate = async (pool, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT * FROM app_updates WHERE is_active = 1 ORDER BY id DESC LIMIT 1"
+    );
+
+    if (rows.length === 0) {
+      return sendJSON(res, 200, {});
+    }
+
+    sendJSON(res, 200, formatForceUpdate(rows[0]));
+  } catch (err) {
+    console.error(err);
+    sendJSON(res, 500, { error: "Failed to fetch active update" });
   }
 };
 
