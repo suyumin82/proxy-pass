@@ -28,7 +28,6 @@ module.exports = (pool, parsedUrl, req, res, user) => {
 };
 
 const formatForceUpdate = (data) => ({
-  update_required: !!data.update_required,
   latest_version: data.latest_version,
   minimum_version: data.minimum_version,
   update_type: data.update_type,
