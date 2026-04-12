@@ -289,7 +289,7 @@ const server = http.createServer((req, res) => {
   if (parsedUrl.pathname === `${MCW_API_PATH}update`) {
     return forceUpdateFromLocal(req, res);
   }
-
+  
   if (parsedUrl.pathname === `${MCW_API_PATH}game`) {
     return gameCategoryFromLocal(req, res);
   }
@@ -300,6 +300,14 @@ const server = http.createServer((req, res) => {
 
   if (parsedUrl.pathname === `${MCW_API_PATH}v2/update`) {
     return forceUpdate(req, res);
+  }
+
+  if (parsedUrl.pathname === `${MCW_API_PATH}v2/updates/status`) {
+    return updateRouter(pool, parsedUrl, req, res);
+  }
+
+  if (parsedUrl.pathname === `${MCW_API_PATH}v2/maintain/status`) {
+    return maintainRouter(pool, parsedUrl, req, res);
   }
 
   if (parsedUrl.pathname === `${MCW_API_PATH}v2/game`) {
