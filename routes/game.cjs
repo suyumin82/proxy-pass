@@ -60,12 +60,15 @@ const create = async (pool, req, res) => {
   req.on("data", (chunk) => (body += chunk));
   req.on("end", async () => {
     try {
-      const { categoryId, displayOrder, name, displayName } = JSON.parse(body);
+      const { categoryId, displayOrder, name, displayName, default: isDefault } = JSON.parse(body);
+
+      if (toBoolean(isDefault)) {
+        await pool.query("UPDATE games SET `default` = 0");
+      }
 
       await pool.query(
-        `INSERT INTO games (categoryId, displayOrder, name, displayName)
-         VALUES (?, ?, ?, ?)`,
-        [categoryId, displayOrder, name, displayName]
+        "INSERT INTO games (categoryId, displayOrder, name, displayName, `default`) VALUES (?, ?, ?, ?, ?)",
+        [categoryId, displayOrder, name, displayName, toBoolean(isDefault) ? 1 : 0]
       );
 
       sendJSON(res, 201, { message: "Game created successfully" });
@@ -102,16 +105,15 @@ const update = async (pool, req, res) => {
   req.on("data", (chunk) => (body += chunk));
   req.on("end", async () => {
     try {
-      const { id, categoryId, displayOrder, name, displayName } = JSON.parse(body);
+      const { id, categoryId, displayOrder, name, displayName, default: isDefault } = JSON.parse(body);
+
+      if (toBoolean(isDefault)) {
+        await pool.query("UPDATE games SET `default` = 0 WHERE id <> ?", [id]);
+      }
 
       await pool.query(
-        `UPDATE games SET 
-         categoryId = ?,
-         displayOrder = ?,
-         name = ?,
-         displayName = ?
-         WHERE id = ?`,
-        [categoryId, displayOrder, name, displayName, id]
+        "UPDATE games SET categoryId = ?, displayOrder = ?, name = ?, displayName = ?, `default` = ? WHERE id = ?",
+        [categoryId, displayOrder, name, displayName, toBoolean(isDefault) ? 1 : 0, id]
       );
 
       sendJSON(res, 200, { message: "Game updated successfully" });
