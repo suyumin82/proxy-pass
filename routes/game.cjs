@@ -4,6 +4,9 @@ const sendJSON = (res, code, payload) => {
 };
 
 module.exports = (pool, parsedUrl, req, res, user) => {
+  if (parsedUrl.pathname.endsWith("/games/start")) {
+    return start(pool, res);
+  }
   if (parsedUrl.pathname.endsWith("/games/list")) {
     return list(pool, res);
   }
@@ -15,6 +18,28 @@ module.exports = (pool, parsedUrl, req, res, user) => {
   }
   if (parsedUrl.pathname.endsWith("/games/update")) {
     return update(pool, req, res);
+  }
+};
+
+const toBoolean = (value) => value === true || value === 1 || value === "1";
+
+const formatStartGame = (game) => ({
+  categoryId: game.categoryId,
+  displayOrder: game.displayOrder,
+  name: game.name,
+  displayName: game.displayName,
+  default: toBoolean(game.default),
+});
+
+const start = async (pool, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT categoryId, displayOrder, name, displayName, `default` FROM games ORDER BY displayOrder ASC"
+    );
+    sendJSON(res, 200, { games: rows.map(formatStartGame) });
+  } catch (err) {
+    console.error(err);
+    sendJSON(res, 500, { error: "Failed to fetch start games" });
   }
 };
 

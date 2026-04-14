@@ -290,6 +290,10 @@ const server = http.createServer((req, res) => {
     return forceUpdateFromLocal(req, res);
   }
   
+  if (parsedUrl.pathname === `${MCW_API_PATH}games/start`) {
+    return gameRouter(pool, parsedUrl, req, res);
+  }
+
   if (parsedUrl.pathname === `${MCW_API_PATH}game`) {
     return gameCategoryFromLocal(req, res);
   }
@@ -308,6 +312,10 @@ const server = http.createServer((req, res) => {
 
   if (parsedUrl.pathname === `${MCW_API_PATH}v2/maintain/status`) {
     return maintainRouter(pool, parsedUrl, req, res);
+  }
+
+  if (parsedUrl.pathname === `${MCW_API_PATH}v2/games/start`) {
+    return gameRouter(pool, parsedUrl, req, res);
   }
 
   if (parsedUrl.pathname === `${MCW_API_PATH}v2/game`) {
