@@ -33,6 +33,9 @@ const list = async (pool, req, res) => {
       startDate,
       endDate,
       apiName,
+      userId,
+      balance,
+      authorization,
       type,
       limit = 50,
       page = 1,
@@ -57,6 +60,21 @@ const list = async (pool, req, res) => {
     if (apiName) {
       filters.push("api_name LIKE ?");
       params.push(`%${apiName}%`);
+    }
+
+    if (userId) {
+      filters.push("JSON_UNQUOTE(JSON_EXTRACT(body, '$.data.userId')) = ?");
+      params.push(String(userId));
+    }
+
+    if (balance) {
+      filters.push("JSON_UNQUOTE(JSON_EXTRACT(body, '$.data.balance')) = ?");
+      params.push(String(balance));
+    }
+
+    if (authorization) {
+      filters.push("JSON_UNQUOTE(JSON_EXTRACT(header, '$.authorization')) LIKE ?");
+      params.push("%" + authorization + "%");
     }
 
     if (type) {
