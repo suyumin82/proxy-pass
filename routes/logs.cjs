@@ -73,8 +73,8 @@ const list = async (pool, req, res) => {
     }
 
     if (authorization) {
-      filters.push("JSON_UNQUOTE(JSON_EXTRACT(header, '$.authorization')) LIKE ?");
-      params.push("%" + authorization + "%");
+      filters.push("JSON_UNQUOTE(JSON_EXTRACT(header, '$.authorization')) = ?");
+      params.push(String(authorization));
     }
 
     if (type) {
